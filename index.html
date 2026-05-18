@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Tug of War Vocabulary Game</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f0f4f8;
+    text-align:center;
+    overflow:hidden;
+}
+
+#game-container{
+    width:100vw;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+}
+
+#rope-area{
+    position:relative;
+    height:160px;
+    background:white;
+    border-top:5px solid #795548;
+    border-bottom:5px solid #795548;
+}
+
+#rope{
+    position:absolute;
+    width:200%;
+    height:20px;
+    background:repeating-linear-gradient(
+        90deg,
+        #d7ccc8,
+        #d7ccc8 20px,
+        #8d6e63 20px,
+        #8d6e63 40px
+    );
+    top:70px;
+    left:-50%;
+    transition:left 0.5s ease-out;
+}
+
+#marker{
+    position:absolute;
+    width:10px;
+    height:90px;
+    background:#ff5252;
+    top:35px;
+    left:50%;
+    transform:translateX(-50%);
+}
+
+.players-left,
+.players-right{
+    position:absolute;
+    top:10px;
+    font-size:50px;
+}
+
+.players-left{
+    left:20px;
+}
+
+.players-right{
+    right:20px;
+}
+
+.teams{
+    display:flex;
+    justify-content:space-between;
+    padding:0 100px;
+    font-weight:bold;
+    font-size:32px;
+}
+
+.team-1{ color:#2196f3; }
+.team-2{ color:#4caf50; }
+
+#question-card{
+    background:white;
+    margin:0 auto;
+    padding:30px;
+    border-radius:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.1);
+    width:70%;
+}
+
+#word{
+    font-size:60px;
+    margin-bottom:20px;
+    color:#333;
+    font-weight:bold;
+}
+
+#meaning{
+    font-size:32px;
+    color:#555;
+    margin-bottom:30px;
+}
+
+.buttons{
+    display:flex;
+    justify-content:center;
+    gap:40px;
+}
+
+button{
+    padding:25px 50px;
+    font-size:28px;
+    font-weight:bold;
+    cursor:pointer;
+    border:none;
+    border-radius:20px;
+    color:white;
+}
+
+.btn-true{ background:#4caf50; }
+.btn-false{ background:#f44336; }
+
+#info{
+    font-size:24px;
+    color:#555;
+}
+
+#turn-display{
+    font-size:28px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.player{
+    display:inline-block;
+    font-size:50px;
+    transition: transform 0.2s;
+}
+
+.pull-left{
+    animation: pullLeft 0.4s ease;
+}
+
+.pull-right{
+    animation: pullRight 0.4s ease;
+}
+
+@keyframes pullLeft{
+    0% { transform: translateX(0); }
+    50% { transform: translateX(-15px); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes pullRight{
+    0% { transform: translateX(0); }
+    50% { transform: translateX(15px); }
+    100% { transform: translateX(0); }
+}
+
+#winner-screen{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.85);
+    color:white;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    font-size:70px;
+    z-index:1000;
+}
+
+#confetti{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+.confetti-piece{
+    position:absolute;
+    width:10px;
+    height:10px;
+    animation:fall 3s linear infinite;
+}
+
+@keyframes fall{
+    0%{transform:translateY(-10px)}
+    100%{transform:translateY(100vh)}
+}
+</style>
+</head>
+
+<body>
+
+<div id="game-container">
+
+<div class="teams">
+<div class="team-1">TEAM 1</div>
+Vocabulary Battle
+<div class="team-2">TEAM 2</div>
+</div>
+
+<div id="rope-area">
+
+<div class="players-left" id="team1">
+<span class="player">🧑</span>
+<span class="player">🧑</span>
+<span class="player">🧑</span>
+</div>
+
+<div class="players-right" id="team2">
+<span class="player">🧑</span>
+<span class="player">🧑</span>
+<span class="player">🧑</span>
+</div>
+
+<div id="marker"></div>
+<div id="rope"></div>
+
+</div>
+
+<div>
+<div id="turn-display">Turn: Team 1</div>
+
+<div id="question-card">
+
+<div id="word">Word...</div>
+
+<div id="meaning">Meaning...</div>
+
+<div class="buttons">
+<button class="btn-true" onclick="checkAnswer(true)">CORRECT</button>
+<button class="btn-false" onclick="checkAnswer(false)">WRONG</button>
+</div>
+
+</div>
+</div>
+
+<div id="info">
+Question: <span id="q-num">1</span>
+</div>
+
+</div>
+
+<div id="winner-screen">
+<h1 id="winner-text"></h1>
+<div id="confetti"></div>
+</div>
+
+<script>
+
+const questions = [
+
+{
+word:"Authenticity",
+meaning:"being genuine and original",
+correct:true
+},
+
+{
+word:"Hospitality",
+meaning:"friendly treatment of guests",
+correct:true
+},
+
+{
+word:"Nomadic culture",
+meaning:"traditional mobile lifestyle",
+correct:true
+},
+
+{
+word:"Stereotype",
+meaning:"oversimplified belief about people/countries",
+correct:true
+},
+
+{
+word:"Heritage",
+meaning:"cultural traditions from the past",
+correct:true
+},
+
+{
+word:"Secluded",
+meaning:"isolated/private",
+correct:true
+},
+
+{
+word:"Infrastructure",
+meaning:"roads, transport, facilities",
+correct:true
+},
+
+{
+word:"Globalization",
+meaning:"international integration of cultures/economies",
+correct:true
+},
+
+// FALSE QUESTIONS
+
+{
+word:"Authenticity",
+meaning:"modern transport system",
+correct:false
+},
+
+{
+word:"Hospitality",
+meaning:"fear of strangers",
+correct:false
+},
+
+{
+word:"Heritage",
+meaning:"future technology",
+correct:false
+},
+
+{
+word:"Infrastructure",
+meaning:"traditional clothes",
+correct:false
+},
+
+{
+word:"Secluded",
+meaning:"crowded and noisy",
+correct:false
+},
+
+{
+word:"Globalization",
+meaning:"living alone in mountains",
+correct:false
+}
+
+];
+
+let currentQ = 0;
+let ropePos = -50;
+let turn = 1;
+
+function updateGame(){
+
+if(currentQ >= questions.length){
+
+let winner;
+
+if(ropePos < -50){
+winner = "🏆 Team 1 Wins!";
+}
+else if(ropePos > -50){
+winner = "🏆 Team 2 Wins!";
+}
+else{
+winner = "🤝 Draw!";
+}
+
+showWinner(winner);
+return;
+}
+
+document.getElementById('word').innerText =
+questions[currentQ].word;
+
+document.getElementById('meaning').innerText =
+questions[currentQ].meaning;
+
+document.getElementById('q-num').innerText =
+currentQ + 1;
+
+document.getElementById('turn-display').innerText =
+"Turn: Team " + turn;
+
+document.getElementById('rope').style.left =
+ropePos + "%";
+}
+
+function checkAnswer(userAnswer){
+
+animatePlayers(turn);
+
+let isCorrect =
+(userAnswer === questions[currentQ].correct);
+
+if(turn === 1){
+ropePos += (isCorrect ? -7 : 7);
+}else{
+ropePos += (isCorrect ? 7 : -7);
+}
+
+currentQ++;
+
+turn = (turn === 1) ? 2 : 1;
+
+updateGame();
+}
+
+function animatePlayers(team){
+
+let players = document.querySelectorAll(
+team === 1 ? "#team1 .player" : "#team2 .player"
+);
+
+players.forEach(p => {
+
+p.classList.add(
+team === 1 ? "pull-left" : "pull-right"
+);
+
+setTimeout(() => {
+
+p.classList.remove("pull-left");
+p.classList.remove("pull-right");
+
+}, 400);
+
+});
+}
+
+function showWinner(text){
+
+let screen = document.getElementById("winner-screen");
+let winnerText = document.getElementById("winner-text");
+
+winnerText.innerText = text;
+
+screen.style.display = "flex";
+
+let confetti = document.getElementById("confetti");
+
+for(let i = 0; i < 120; i++){
+
+let piece = document.createElement("div");
+
+piece.className = "confetti-piece";
+
+piece.style.left = Math.random() * 100 + "%";
+
+piece.style.backgroundColor =
+["red","yellow","blue","green","pink","orange"]
+[Math.floor(Math.random() * 6)];
+
+piece.style.animationDuration =
+(Math.random() * 3 + 2) + "s";
+
+confetti.appendChild(piece);
+}
+}
+
+updateGame();
+
+</script>
+
+</body>
+</html>
